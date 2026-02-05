@@ -1,23 +1,22 @@
 import React, { useEffect } from "react";
-import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/router";
-import { useAuthState } from "react-firebase-hooks/auth";
 import { Post } from "../../../../atoms/postsAtom";
 import About from "../../../../components/Community/About";
 import PageContentLayout from "../../../../components/Layout/PageContent";
 import Comments from "../../../../components/Post/Comments";
 import PostLoader from "../../../../components/Post/Loader";
 import PostItem from "../../../../components/Post/PostItem";
-import { auth, firestore } from "../../../../firebase/clientApp";
 import useCommunityData from "../../../../hooks/useCommunityData";
 import usePosts from "../../../../hooks/usePosts";
+import { postApi } from "../../../../lib/api";
+import { useAuthContext } from "../../../../context/AuthContext";
 
 type PostPageProps = {};
 
 const PostPage: React.FC<PostPageProps> = () => {
-  const [user] = useAuthState(auth);
+  const { user } = useAuthContext();
   const router = useRouter();
-  const { community, pid } = router.query;
+  const { pid } = router.query;
   const { communityStateValue } = useCommunityData();
 
   // Need to pass community data here to see if current post [pid] has been voted on
@@ -35,11 +34,10 @@ const PostPage: React.FC<PostPageProps> = () => {
 
     setLoading(true);
     try {
-      const postDocRef = doc(firestore, "posts", pid as string);
-      const postDoc = await getDoc(postDocRef);
+      const postDoc = await postApi.get(pid as string, user?.id);
       setPostStateValue((prev) => ({
         ...prev,
-        selectedPost: { id: postDoc.id, ...postDoc.data() } as Post,
+        selectedPost: postDoc as Post,
       }));
       // setPostStateValue((prev) => ({
       //   ...prev,
@@ -81,13 +79,12 @@ const PostPage: React.FC<PostPageProps> = () => {
                     )?.voteValue
                   }
                   userIsCreator={
-                    user?.uid === postStateValue.selectedPost.creatorId
+                    user?.id === postStateValue.selectedPost.creatorId
                   }
                   router={router}
                 />
                 <Comments
                   user={user}
-                  community={community as string}
                   selectedPost={postStateValue.selectedPost}
                 />
               </>

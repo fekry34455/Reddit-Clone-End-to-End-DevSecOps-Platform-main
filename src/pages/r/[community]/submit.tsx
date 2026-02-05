@@ -2,19 +2,17 @@ import { Box, Text } from "@chakra-ui/react";
 import { NextPage } from "next";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
-import { useAuthState } from "react-firebase-hooks/auth";
 import { useRecoilValue } from "recoil";
 import { communityState } from "../../../atoms/communitiesAtom";
 import About from "../../../components/Community/About";
 import PageContentLayout from "../../../components/Layout/PageContent";
 import NewPostForm from "../../../components/Post/PostForm/NewPostForm";
-import { auth } from "../../../firebase/clientApp";
 import useCommunityData from "../../../hooks/useCommunityData";
+import { useAuthContext } from "../../../context/AuthContext";
 
 const CreateCommmunityPostPage: NextPage = () => {
-  const [user, loadingUser, error] = useAuthState(auth);
+  const { user, loading: loadingUser } = useAuthContext();
   const router = useRouter();
-  const { community } = router.query;
   // const visitedCommunities = useRecoilValue(communityState).visitedCommunities;
   const communityStateValue = useRecoilValue(communityState);
   const { loading } = useCommunityData();
@@ -40,7 +38,6 @@ const CreateCommmunityPostPage: NextPage = () => {
         {user && (
           <NewPostForm
             communityId={communityStateValue.currentCommunity.id}
-            communityImageURL={communityStateValue.currentCommunity.imageURL}
             user={user}
           />
         )}

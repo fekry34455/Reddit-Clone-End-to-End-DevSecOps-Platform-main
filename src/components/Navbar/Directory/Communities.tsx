@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import { Box, Flex, Icon, MenuItem, Text } from "@chakra-ui/react";
-import { useAuthState } from "react-firebase-hooks/auth";
 import { FaReddit } from "react-icons/fa";
 import { GrAdd } from "react-icons/gr";
 import { useRecoilValue } from "recoil";
 import { communityState } from "../../../atoms/communitiesAtom";
-import { auth } from "../../../firebase/clientApp";
+import { useAuthContext } from "../../../context/AuthContext";
 import CreateCommunityModal from "../../Modal/CreateCommunity";
 import MenuListItem from "./MenuListItem";
 
@@ -14,7 +13,7 @@ type CommunitiesProps = {
 };
 
 const Communities: React.FC<CommunitiesProps> = ({ menuOpen }) => {
-  const [user] = useAuthState(auth);
+  const { user } = useAuthContext();
   const [open, setOpen] = useState(false);
   const mySnippets = useRecoilValue(communityState).mySnippets;
 
@@ -23,7 +22,7 @@ const Communities: React.FC<CommunitiesProps> = ({ menuOpen }) => {
       <CreateCommunityModal
         isOpen={open}
         handleClose={() => setOpen(false)}
-        userId={user?.uid!}
+        userId={user?.id || ""}
       />
       {/* COULD DO THIS FOR CLEANER COMPONENTS */}
       {/* <Moderating snippets={snippetState.filter((item) => item.isModerator)} />

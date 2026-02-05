@@ -16,14 +16,12 @@ import { HiOutlineDotsHorizontal } from "react-icons/hi";
 import { RiCakeLine } from "react-icons/ri";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { auth, firestore, storage } from "../../firebase/clientApp";
 import { Community, communityState } from "../../atoms/communitiesAtom";
 import moment from "moment";
-import { useRecoilValue, useSetRecoilState } from "recoil";
+import { useSetRecoilState } from "recoil";
 import { FaReddit } from "react-icons/fa";
-import { getDownloadURL, ref, uploadString } from "firebase/storage";
-import { doc, updateDoc } from "firebase/firestore";
+import { useAuthContext } from "../../context/AuthContext";
+import { communityApi } from "../../lib/api";
 
 type AboutProps = {
   communityData: Community;
@@ -38,7 +36,7 @@ const About: React.FC<AboutProps> = ({
   onCreatePage,
   loading,
 }) => {
-  const [user] = useAuthState(auth); // will revisit how 'auth' state is passed
+  const { user } = useAuthContext();
   const router = useRouter();
   const selectFileRef = useRef<HTMLInputElement>(null);
   const setCommunityStateValue = useSetRecoilState(communityState);
@@ -66,20 +64,17 @@ const About: React.FC<AboutProps> = ({
     if (!selectedFile) return;
     setImageLoading(true);
     try {
-      const imageRef = ref(storage, `communities/${communityData.id}/image`);
-      await uploadString(imageRef, selectedFile, "data_url");
-      const downloadURL = await getDownloadURL(imageRef);
-      await updateDoc(doc(firestore, "communities", communityData.id), {
-        imageURL: downloadURL,
-      });
-      console.log("HERE IS DOWNLOAD URL", downloadURL);
+      const updated = await communityApi.updateImage(
+        communityData.id,
+        selectedFile
+      );
 
       // April 24 - added state update
       setCommunityStateValue((prev) => ({
         ...prev,
         currentCommunity: {
           ...prev.currentCommunity,
-          imageURL: downloadURL,
+          imageURL: updated.imageURL,
         },
       }));
     } catch (error: any) {
@@ -117,7 +112,7 @@ const About: React.FC<AboutProps> = ({
           </Stack>
         ) : (
           <>
-            {user?.uid === communityData?.creatorId && (
+            {user?.id === communityData?.creatorId && (
               <Box
                 bg="gray.100"
                 width="100%"
@@ -156,10 +151,7 @@ const About: React.FC<AboutProps> = ({
                 <Icon as={RiCakeLine} mr={2} fontSize={18} />
                 {communityData?.createdAt && (
                   <Text>
-                    Created{" "}
-                    {moment(
-                      new Date(communityData.createdAt!.seconds * 1000)
-                    ).format("MMM DD, YYYY")}
+                    Created {moment(communityData.createdAt).format("MMM DD, YYYY")}
                   </Text>
                 )}
               </Flex>
@@ -171,7 +163,7 @@ const About: React.FC<AboutProps> = ({
                 </Link>
               )}
               {/* !!!ADDED AT THE VERY END!!! INITIALLY DOES NOT EXIST */}
-              {user?.uid === communityData?.creatorId && (
+              {user?.id === communityData?.creatorId && (
                 <>
                   <Divider />
                   <Stack fontSize="10pt" spacing={1}>

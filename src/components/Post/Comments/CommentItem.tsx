@@ -1,14 +1,5 @@
-import React, { useCallback, useState } from "react";
-import {
-  Avatar,
-  Box,
-  Flex,
-  Icon,
-  Spinner,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
-import { Timestamp } from "firebase/firestore";
+import React from "react";
+import { Box, Flex, Icon, Spinner, Stack, Text } from "@chakra-ui/react";
 import moment from "moment";
 import { FaReddit } from "react-icons/fa";
 import {
@@ -25,7 +16,7 @@ export type Comment = {
   postId: string;
   postTitle: string;
   text: string;
-  createdAt?: Timestamp;
+  createdAt?: string;
 };
 
 type CommentItemProps = {
@@ -71,9 +62,9 @@ const CommentItem: React.FC<CommentItemProps> = ({
           >
             {comment.creatorDisplayText}
           </Text>
-          {comment.createdAt?.seconds && (
+          {comment.createdAt && (
             <Text color="gray.600">
-              {moment(new Date(comment.createdAt?.seconds * 1000)).fromNow()}
+              {moment(comment.createdAt).fromNow()}
             </Text>
           )}
           {isLoading && <Spinner size="sm" />}

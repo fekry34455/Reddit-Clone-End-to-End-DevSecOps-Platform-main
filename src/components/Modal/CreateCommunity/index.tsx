@@ -14,13 +14,12 @@ import {
   Stack,
   Text,
 } from "@chakra-ui/react";
-import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/router";
 import { BsFillEyeFill, BsFillPersonFill } from "react-icons/bs";
 import { HiLockClosed } from "react-icons/hi";
 import { useSetRecoilState } from "recoil";
 import { communityState } from "../../../atoms/communitiesAtom";
-import { firestore } from "../../../firebase/clientApp";
+import { communityApi } from "../../../lib/api";
 import ModalWrapper from "../ModalWrapper";
 
 type CreateCommunityModalProps = {
@@ -60,28 +59,10 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
 
     setLoading(true);
     try {
-      // Create community document and communitySnippet subcollection document on user
-      const communityDocRef = doc(firestore, "communities", name);
-      await runTransaction(firestore, async (transaction) => {
-        const communityDoc = await transaction.get(communityDocRef);
-        if (communityDoc.exists()) {
-          throw new Error(`Sorry, /r${name} is taken. Try another.`);
-        }
-
-        transaction.set(communityDocRef, {
-          creatorId: userId,
-          createdAt: serverTimestamp(),
-          numberOfMembers: 1,
-          privacyType: "public",
-        });
-
-        transaction.set(
-          doc(firestore, `users/${userId}/communitySnippets`, name),
-          {
-            communityId: name,
-            isModerator: true,
-          }
-        );
+      await communityApi.create({
+        id: name,
+        creatorId: userId,
+        privacyType: communityType,
       });
     } catch (error: any) {
       console.log("Transaction error", error);

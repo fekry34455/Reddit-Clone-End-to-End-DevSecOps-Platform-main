@@ -1,35 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { Stack } from "@chakra-ui/react";
-import {
-  collection,
-  doc,
-  getDocs,
-  onSnapshot,
-  orderBy,
-  query,
-  where,
-  writeBatch,
-} from "firebase/firestore";
-import { useRecoilState, useSetRecoilState } from "recoil";
-import { authModalState } from "../../atoms/authModalAtom";
 import { Community } from "../../atoms/communitiesAtom";
-import { firestore } from "../../firebase/clientApp";
 import PostLoader from "./Loader";
-import { Post, postState, PostVote } from "../../atoms/postsAtom";
+import { Post } from "../../atoms/postsAtom";
 import PostItem from "./PostItem";
 import { useRouter } from "next/router";
 import usePosts from "../../hooks/usePosts";
+import { postApi } from "../../lib/api";
 
 type PostsProps = {
   communityData?: Community;
   userId?: string;
-  loadingUser: boolean;
 };
 
 const Posts: React.FC<PostsProps> = ({
   communityData,
   userId,
-  loadingUser,
 }) => {
   /**
    * PART OF INITIAL SOLUTION BEFORE CUSTOM HOOK
@@ -226,13 +212,7 @@ const Posts: React.FC<PostsProps> = ({
 
     setLoading(true);
     try {
-      const postsQuery = query(
-        collection(firestore, "posts"),
-        where("communityId", "==", communityData?.id!),
-        orderBy("createdAt", "desc")
-      );
-      const postDocs = await getDocs(postsQuery);
-      const posts = postDocs.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const posts = await postApi.list(communityData?.id, userId);
       setPostStateValue((prev) => ({
         ...prev,
         posts: posts as Post[],
