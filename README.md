@@ -19,6 +19,35 @@ Git is used as the **single source of truth**, ensuring consistency, traceabilit
 
 ---
 
+## 🧩 Project Structure (Frontend & Backend)
+
+The application is now split into two folders:
+
+- `frontend/` → Next.js UI
+- `backend/` → Express API + Prisma
+
+The frontend connects to the backend via environment variables. Use
+`NEXT_PUBLIC_API_BASE_URL` (and optionally `API_BASE_URL` for SSR) to point the UI
+to the API server.
+
+### Local Development
+
+1. Start the backend API:
+   ```bash
+   cd backend
+   npm install
+   npm run dev
+   ```
+
+2. Start the frontend:
+   ```bash
+   cd frontend
+   npm install
+   NEXT_PUBLIC_API_BASE_URL="http://localhost:4000" npm run dev
+   ```
+
+---
+
 ## 🏗️ Architecture Diagram
 
 ![DevSecOps Architecture](images/architecture.webp)
