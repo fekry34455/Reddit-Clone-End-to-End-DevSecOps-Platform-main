@@ -76,7 +76,10 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   console.log("GET SERVER SIDE PROPS RUNNING");
 
   try {
-    const apiBase = process.env.API_BASE_URL || "http://localhost:4000";
+    const apiBase =
+      process.env.NEXT_PUBLIC_API_BASE_URL ||
+      process.env.API_BASE_URL ||
+      "http://localhost:4000";
     const response = await fetch(
       `${apiBase}/api/communities/${context.query.community as string}`
     );
