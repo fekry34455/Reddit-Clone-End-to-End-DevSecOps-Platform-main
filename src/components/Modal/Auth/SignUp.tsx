@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import { Button, Flex, Text } from "@chakra-ui/react";
-import { useCreateUserWithEmailAndPassword } from "react-firebase-hooks/auth";
 import { ModalView } from "../../../atoms/authModalAtom";
-import { auth } from "../../../firebase/clientApp";
-import { FIREBASE_ERRORS } from "../../../firebase/errors";
+import { useAuthContext } from "../../../context/AuthContext";
 import InputItem from "../../Layout/InputItem";
 
 type SignUpProps = {
@@ -17,10 +15,9 @@ const SignUp: React.FC<SignUpProps> = ({ toggleView }) => {
     confirmPassword: "",
   });
   const [formError, setFormError] = useState("");
-  const [createUserWithEmailAndPassword, _, loading, authError] =
-    useCreateUserWithEmailAndPassword(auth);
+  const { signup, loading } = useAuthContext();
 
-  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (formError) setFormError("");
     if (!form.email.includes("@")) {
@@ -32,7 +29,11 @@ const SignUp: React.FC<SignUpProps> = ({ toggleView }) => {
     }
 
     // Valid form inputs
-    createUserWithEmailAndPassword(form.email, form.password);
+    try {
+      await signup(form.email, form.password);
+    } catch (error: any) {
+      setFormError(error.message || "Sign up failed");
+    }
   };
 
   const onChange = ({
@@ -67,8 +68,7 @@ const SignUp: React.FC<SignUpProps> = ({ toggleView }) => {
         onChange={onChange}
       />
       <Text textAlign="center" mt={2} fontSize="10pt" color="red">
-        {formError ||
-          FIREBASE_ERRORS[authError?.message as keyof typeof FIREBASE_ERRORS]}
+        {formError}
       </Text>
       <Button
         width="100%"

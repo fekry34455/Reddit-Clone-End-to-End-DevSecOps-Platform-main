@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PrivacyType {
+  public
+  restricted
+  private
+}
+
+model User {
+  id           String            @id @default(uuid())
+  email        String            @unique
+  passwordHash String
+  displayName  String
+  createdAt    DateTime          @default(now())
+  communities  CommunityMember[]
+  posts        Post[]
+  comments     Comment[]
+  votes        PostVote[]
+}
+
+model Community {
+  id           String            @id
+  creatorId    String
+  privacyType  PrivacyType
+  createdAt    DateTime          @default(now())
+  imageURL     String?
+  creator      User              @relation(fields: [creatorId], references: [id])
+  members      CommunityMember[]
+  posts        Post[]
+}
+
+model CommunityMember {
+  id          String    @id @default(uuid())
+  communityId String
+  userId      String
+  isModerator Boolean   @default(false)
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, userId])
+}
+
+model Post {
+  id               String     @id @default(uuid())
+  communityId      String
+  creatorId        String
+  title            String
+  body             String
+  imageURL         String?
+  numberOfComments Int        @default(0)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  community        Community  @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  creator          User       @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  votes            PostVote[]
+  comments         Comment[]
+}
+
+model PostVote {
+  id        String  @id @default(uuid())
+  postId    String
+  userId    String
+  voteValue Int
+  post      Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  creatorId String
+  text      String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  creator   User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+}

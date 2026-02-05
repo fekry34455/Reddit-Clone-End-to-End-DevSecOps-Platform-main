@@ -1,13 +1,13 @@
 import React from "react";
 import { Flex } from "@chakra-ui/react";
-import { User } from "firebase/auth";
+import { User } from "../../../types/user";
 import AuthModal from "../../Modal/Auth";
 import AuthButtons from "./AuthButtons";
 import Icons from "./Icons";
 import MenuWrapper from "./ProfileMenu/MenuWrapper";
 
 type RightContentProps = {
-  user: User;
+  user: User | null;
 };
 
 const RightContent: React.FC<RightContentProps> = ({ user }) => {

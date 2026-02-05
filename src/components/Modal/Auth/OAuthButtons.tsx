@@ -1,28 +1,27 @@
 import { Button, Flex, Image, Text } from "@chakra-ui/react";
-import React from "react";
-import { useAuthState, useSignInWithGoogle } from "react-firebase-hooks/auth";
-import { auth } from "../../../firebase/clientApp";
+import React, { useState } from "react";
 
 type OAuthButtonsProps = {};
 
 const OAuthButtons: React.FC<OAuthButtonsProps> = () => {
-  const [signInWithGoogle, _, loading, error] = useSignInWithGoogle(auth);
+  const [message, setMessage] = useState("");
 
   return (
     <Flex direction="column" mb={4} width="100%">
       <Button
         variant="oauth"
         mb={2}
-        onClick={() => signInWithGoogle()}
-        isLoading={loading}
+        onClick={() =>
+          setMessage("OAuth sign-in is not configured for this backend.")
+        }
       >
         <Image src="/images/googlelogo.png" height="20px" mr={4} />
         Continue with Google
       </Button>
       <Button variant="oauth">Some Other Provider</Button>
-      {error && (
+      {message && (
         <Text textAlign="center" fontSize="10pt" color="red" mt={2}>
-          {error}
+          {message}
         </Text>
       )}
     </Flex>

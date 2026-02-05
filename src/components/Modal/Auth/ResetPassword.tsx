@@ -1,10 +1,9 @@
 import React, { useState } from "react";
 import { Button, Flex, Icon, Input, Text } from "@chakra-ui/react";
-import { useSendPasswordResetEmail } from "react-firebase-hooks/auth";
 import { BsDot, BsReddit } from "react-icons/bs";
 import { authModalState, ModalView } from "../../../atoms/authModalAtom";
-import { auth } from "../../../firebase/clientApp";
 import { useSetRecoilState } from "recoil";
+import { useAuthContext } from "../../../context/AuthContext";
 
 type ResetPasswordProps = {
   toggleView: (view: ModalView) => void;
@@ -14,14 +13,18 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ toggleView }) => {
   const setAuthModalState = useSetRecoilState(authModalState);
   const [email, setEmail] = useState("");
   const [success, setSuccess] = useState(false);
-  const [sendPasswordResetEmail, sending, error] =
-    useSendPasswordResetEmail(auth);
+  const [error, setError] = useState("");
+  const { resetPassword, loading } = useAuthContext();
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    await sendPasswordResetEmail(email);
-    setSuccess(true);
+    setError("");
+    try {
+      await resetPassword(email);
+      setSuccess(true);
+    } catch (err: any) {
+      setError(err.message || "Unable to send reset email");
+    }
   };
   return (
     <Flex direction="column" alignItems="center" width="100%">
@@ -61,7 +64,7 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ toggleView }) => {
               bg="gray.50"
             />
             <Text textAlign="center" fontSize="10pt" color="red">
-              {error?.message}
+              {error}
             </Text>
             <Button
               width="100%"
@@ -69,7 +72,7 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ toggleView }) => {
               mb={2}
               mt={2}
               type="submit"
-              isLoading={sending}
+              isLoading={loading}
             >
               Reset Password
             </Button>

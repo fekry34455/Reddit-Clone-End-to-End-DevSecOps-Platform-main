@@ -1,19 +1,19 @@
 import React from "react";
 import { Flex, Icon, MenuDivider, MenuItem } from "@chakra-ui/react";
-import { signOut } from "firebase/auth";
 import { CgProfile } from "react-icons/cg";
 import { MdOutlineLogin } from "react-icons/md";
 import { useResetRecoilState } from "recoil";
 import { communityState } from "../../../../atoms/communitiesAtom";
-import { auth } from "../../../../firebase/clientApp";
+import { useAuthContext } from "../../../../context/AuthContext";
 
 type UserListProps = {};
 
 const UserList: React.FC<UserListProps> = () => {
   const resetCommunityState = useResetRecoilState(communityState);
+  const { logout } = useAuthContext();
 
-  const logout = async () => {
-    await signOut(auth);
+  const handleLogout = () => {
+    logout();
     resetCommunityState();
   };
 
@@ -34,7 +34,7 @@ const UserList: React.FC<UserListProps> = () => {
         fontSize="10pt"
         fontWeight={700}
         _hover={{ bg: "blue.500", color: "white" }}
-        onClick={logout}
+        onClick={handleLogout}
       >
         <Flex alignItems="center">
           <Icon fontSize={20} mr={2} as={MdOutlineLogin} />

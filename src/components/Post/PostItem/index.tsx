@@ -151,7 +151,7 @@ const PostItem: React.FC<PostItemContentProps> = ({
               )}
               <Text color="gray.500">
                 Posted by u/{post.userDisplayText}{" "}
-                {moment(new Date(post.createdAt.seconds * 1000)).fromNow()}
+                {moment(post.createdAt).fromNow()}
               </Text>
             </Stack>
           )}

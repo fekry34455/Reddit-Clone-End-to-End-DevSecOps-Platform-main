@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-import { doc, getDoc, increment, writeBatch } from "firebase/firestore";
 import { useRouter } from "next/router";
-import { useAuthState } from "react-firebase-hooks/auth";
 import { useRecoilState, useSetRecoilState } from "recoil";
 import { authModalState } from "../atoms/authModalAtom";
 import {
@@ -10,12 +8,11 @@ import {
   communityState,
   defaultCommunity,
 } from "../atoms/communitiesAtom";
-import { auth, firestore } from "../firebase/clientApp";
-import { getMySnippets } from "../helpers/firestore";
+import { useAuthContext } from "../context/AuthContext";
+import { communityApi } from "../lib/api";
 
-// Add ssrCommunityData near end as small optimization
-const useCommunityData = (ssrCommunityData?: boolean) => {
-  const [user] = useAuthState(auth);
+const useCommunityData = () => {
+  const { user } = useAuthContext();
   const router = useRouter();
   const [communityStateValue, setCommunityStateValue] =
     useRecoilState(communityState);
@@ -24,21 +21,21 @@ const useCommunityData = (ssrCommunityData?: boolean) => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!user || !!communityStateValue.mySnippets.length) return;
+    if (!user || communityStateValue.mySnippets.length) return;
 
     getSnippets();
-  }, [user]);
+  }, [user, communityStateValue.mySnippets.length]);
 
   const getSnippets = async () => {
+    if (!user) return;
     setLoading(true);
     try {
-      const snippets = await getMySnippets(user?.uid!);
+      const snippets = await communityApi.snippets(user.id);
       setCommunityStateValue((prev) => ({
         ...prev,
         mySnippets: snippets as CommunitySnippet[],
         initSnippetsFetched: true,
       }));
-      setLoading(false);
     } catch (error: any) {
       console.log("Error getting user snippets", error);
       setError(error.message);
@@ -47,33 +44,11 @@ const useCommunityData = (ssrCommunityData?: boolean) => {
   };
 
   const getCommunityData = async (communityId: string) => {
-    // this causes weird memory leak error - not sure why
-    // setLoading(true);
-    console.log("GETTING COMMUNITY DATA");
-
     try {
-      const communityDocRef = doc(
-        firestore,
-        "communities",
-        communityId as string
-      );
-      const communityDoc = await getDoc(communityDocRef);
-      // setCommunityStateValue((prev) => ({
-      //   ...prev,
-      //   visitedCommunities: {
-      //     ...prev.visitedCommunities,
-      //     [communityId as string]: {
-      //       id: communityDoc.id,
-      //       ...communityDoc.data(),
-      //     } as Community,
-      //   },
-      // }));
+      const community = await communityApi.get(communityId);
       setCommunityStateValue((prev) => ({
         ...prev,
-        currentCommunity: {
-          id: communityDoc.id,
-          ...communityDoc.data(),
-        } as Community,
+        currentCommunity: community as Community,
       }));
     } catch (error: any) {
       console.log("getCommunityData error", error.message);
@@ -82,8 +57,6 @@ const useCommunityData = (ssrCommunityData?: boolean) => {
   };
 
   const onJoinLeaveCommunity = (community: Community, isJoined?: boolean) => {
-    console.log("ON JOIN LEAVE", community.id);
-
     if (!user) {
       setAuthModalState({ open: true, view: "login" });
       return;
@@ -98,31 +71,10 @@ const useCommunityData = (ssrCommunityData?: boolean) => {
   };
 
   const joinCommunity = async (community: Community) => {
-    console.log("JOINING COMMUNITY: ", community.id);
+    if (!user) return;
     try {
-      const batch = writeBatch(firestore);
+      const newSnippet = await communityApi.join(community.id, user.id);
 
-      const newSnippet: CommunitySnippet = {
-        communityId: community.id,
-        imageURL: community.imageURL || "",
-      };
-      batch.set(
-        doc(
-          firestore,
-          `users/${user?.uid}/communitySnippets`,
-          community.id // will for sure have this value at this point
-        ),
-        newSnippet
-      );
-
-      batch.update(doc(firestore, "communities", community.id), {
-        numberOfMembers: increment(1),
-      });
-
-      // perform batch writes
-      await batch.commit();
-
-      // Add current community to snippet
       setCommunityStateValue((prev) => ({
         ...prev,
         mySnippets: [...prev.mySnippets, newSnippet],
@@ -134,18 +86,9 @@ const useCommunityData = (ssrCommunityData?: boolean) => {
   };
 
   const leaveCommunity = async (communityId: string) => {
+    if (!user) return;
     try {
-      const batch = writeBatch(firestore);
-
-      batch.delete(
-        doc(firestore, `users/${user?.uid}/communitySnippets/${communityId}`)
-      );
-
-      batch.update(doc(firestore, "communities", communityId), {
-        numberOfMembers: increment(-1),
-      });
-
-      await batch.commit();
+      await communityApi.leave(communityId, user.id);
 
       setCommunityStateValue((prev) => ({
         ...prev,
@@ -159,21 +102,7 @@ const useCommunityData = (ssrCommunityData?: boolean) => {
     setLoading(false);
   };
 
-  // useEffect(() => {
-  //   if (ssrCommunityData) return;
-  //   const { community } = router.query;
-  //   if (community) {
-  //     const communityData =
-  //       communityStateValue.visitedCommunities[community as string];
-  //     if (!communityData) {
-  //       getCommunityData(community as string);
-  //       return;
-  //     }
-  //   }
-  // }, [router.query]);
-
   useEffect(() => {
-    // if (ssrCommunityData) return;
     const { community } = router.query;
     if (community) {
       const communityData = communityStateValue.currentCommunity;
@@ -182,20 +111,13 @@ const useCommunityData = (ssrCommunityData?: boolean) => {
         getCommunityData(community as string);
         return;
       }
-      // console.log("this is happening", communityStateValue);
     } else {
-      /**
-       * JUST ADDED THIS APRIL 24
-       * FOR NEW LOGIC OF NOT USING visitedCommunities
-       */
       setCommunityStateValue((prev) => ({
         ...prev,
         currentCommunity: defaultCommunity,
       }));
     }
   }, [router.query, communityStateValue.currentCommunity]);
-
-  // console.log("LOL", communityStateValue);
 
   return {
     communityStateValue,

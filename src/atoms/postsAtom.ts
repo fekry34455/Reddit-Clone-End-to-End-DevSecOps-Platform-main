@@ -1,6 +1,4 @@
 import { atom } from "recoil";
-import { Timestamp } from "firebase/firestore";
-
 export type Post = {
   id: string;
   communityId: string;
@@ -17,8 +15,8 @@ export type Post = {
   };
   imageURL?: string;
   postIdx?: number;
-  createdAt?: Timestamp;
-  editedAt?: Timestamp;
+  createdAt?: string;
+  editedAt?: string;
 };
 
 export type PostVote = {

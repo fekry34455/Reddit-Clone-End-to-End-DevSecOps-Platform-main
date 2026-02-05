@@ -9,13 +9,12 @@ import {
   Stack,
   Text,
 } from "@chakra-ui/react";
-import { collection, getDocs, limit, orderBy, query } from "firebase/firestore";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { FaReddit } from "react-icons/fa";
 import { Community } from "../../atoms/communitiesAtom";
-import { firestore } from "../../firebase/clientApp";
 import useCommunityData from "../../hooks/useCommunityData";
+import { communityApi } from "../../lib/api";
 
 type RecommendationsProps = {};
 
@@ -27,19 +26,10 @@ const Recommendations: React.FC<RecommendationsProps> = () => {
   const getCommunityRecommendations = async () => {
     setLoading(true);
     try {
-      const communityQuery = query(
-        collection(firestore, "communities"),
-        orderBy("numberOfMembers", "desc"),
-        limit(5)
-      );
-      const communityDocs = await getDocs(communityQuery);
-      const communities = communityDocs.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Community[];
+      const communities = await communityApi.list(5);
       console.log("HERE ARE COMS", communities);
 
-      setCommunities(communities);
+      setCommunities(communities as Community[]);
     } catch (error: any) {
       console.log("getCommunityRecommendations error", error.message);
     }
